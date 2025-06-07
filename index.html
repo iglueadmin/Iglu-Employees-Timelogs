@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iglu Employee Time Tracker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f8f8;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 2em 1em;
+      gap: 2em;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 2em;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      border: 2px solid #00FFFF;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #00FFFF;
+      margin-bottom: 0.75em;
+    }
+
+    .clock-date {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 1.5em;
+      color: #666;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.8em;
+      font-size: 1rem;
+      border: 2px solid #00FFFF;
+      border-radius: 10px;
+      margin-bottom: 1.2em;
+      outline: none;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 1em;
+      flex-wrap: wrap;
+      margin-bottom: 1em;
+    }
+
+    button {
+      flex: 1 1 45%;
+      padding: 0.75em 1em;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      background-color: #00FFFF;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #00cfd1;
+      transform: translateY(-2px);
+    }
+
+    #response {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #00AAAA;
+      min-height: 1.5em;
+    }
+
+    .sheet-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 900px;
+      height: 70vh;
+      border: 2px solid #00FFFF;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+      padding: 1em;
+      gap: 1em;
+    }
+
+    .refresh-button {
+      padding: 0.4em 1em;
+      background-color: #00FFFF;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      font-size: 0.9rem;
+    }
+
+    .refresh-button:hover {
+      background-color: #00cfd1;
+      transform: translateY(-2px);
+    }
+
+    iframe {
+      width: 100%;
+      flex-grow: 1;
+      border: none;
+      border-radius: 12px;
+      min-height: 300px;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 1.5em;
+      }
+
+      button {
+        flex: 1 1 100%;
+      }
+
+      .sheet-container {
+        height: 60vh;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Iglu Employee Time Tracker</h1>
+    <div class="clock-date" id="clock">Loading time...</div>
+
+    <input type="text" id="name" placeholder="Enter your name" autocomplete="off" autocorrect="off" autocapitalize="words" />
+
+    <div class="button-container">
+      <button onclick="submitTime('Time In')">Time In</button>
+      <button onclick="submitTime('Time Out')">Time Out</button>
+    </div>
+
+    <p id="response"></p>
+  </div>
+
+  <div class="sheet-container" title="Live Google Sheet View (View Only)">
+    <button class="refresh-button" onclick="refreshSheet()">Refresh Sheet</button>
+    <iframe id="sheetIframe" src="https://docs.google.com/spreadsheets/d/1YZy68AkXZOtJjk0pKa1YDvJ1HSbspWWoXEBmP77iVt0/preview" allowfullscreen></iframe>
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLc03tQLaxGpVUoJ47K4A08tfn8agwY3_pZIiJXnFhcwE8PBGaHB5P_YM5rsN2tIioog/exec';
+
+    function submitTime(type) {
+      const name = document.getElementById('name').value.trim();
+      if (!name) {
+        alert("Please enter your name.");
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.append('name', name);
+      params.append('type', type);
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+      })
+      .then(response => response.text())
+      .then(text => {
+        document.getElementById('response').textContent = text;
+        document.getElementById('name').value = '';
+      })
+      .catch(error => {
+        document.getElementById('response').textContent = 'Error: Could not record time.';
+        console.error(error);
+      });
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const time = now.toLocaleTimeString();
+      const date = now.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      document.getElementById('clock').textContent = `${date} — ${time}`;
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function refreshSheet() {
+      const iframe = document.getElementById('sheetIframe');
+      iframe.src = iframe.src;
+    }
+  </script>
+
+</body>
+</html>
